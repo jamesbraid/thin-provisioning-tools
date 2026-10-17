@@ -61,6 +61,20 @@ pub fn generate_metadata_leaks(
     Ok(())
 }
 
+pub fn generate_stale_dirty_bits(md: &Path, nr_blocks: u64) -> Result<()> {
+    let nr_blocks_str = nr_blocks.to_string();
+    let args = args![
+        "-o",
+        &md,
+        "--create-stale-dirty-bits",
+        "--nr-blocks",
+        &nr_blocks_str
+    ];
+    run_ok(cache_generate_damage_cmd(args))?;
+
+    Ok(())
+}
+
 //-----------------------------------------------
 
 pub fn get_clean_shutdown(md: &Path) -> Result<bool> {

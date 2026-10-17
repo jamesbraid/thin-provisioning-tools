@@ -26,6 +26,13 @@ impl CacheGenerateDamageCommand {
                     .action(ArgAction::SetTrue)
                     .requires_all(["EXPECTED", "ACTUAL", "NR_BLOCKS"]),
             )
+            .arg(
+                Arg::new("CREATE_STALE_DIRTY_BITS")
+                    .help("Unmap dirty blocks without clearing their dirty bits")
+                    .long("create-stale-dirty-bits")
+                    .action(ArgAction::SetTrue)
+                    .requires("NR_BLOCKS"),
+            )
             // options
             .arg(
                 Arg::new("EXPECTED")
@@ -43,7 +50,7 @@ impl CacheGenerateDamageCommand {
             )
             .arg(
                 Arg::new("NR_BLOCKS")
-                    .help("Specify the number of metadata blocks")
+                    .help("Specify the number of blocks")
                     .long("nr-blocks")
                     .value_name("NUM")
                     .value_parser(value_parser!(usize)),
@@ -58,7 +65,7 @@ impl CacheGenerateDamageCommand {
             )
             .group(
                 ArgGroup::new("commands")
-                    .args(["CREATE_METADATA_LEAKS"])
+                    .args(["CREATE_METADATA_LEAKS", "CREATE_STALE_DIRTY_BITS"])
                     .required(true),
             );
         engine_args(version_args(cmd))
@@ -86,6 +93,9 @@ impl<'a> Command<'a> for CacheGenerateDamageCommand {
                 nr_blocks: *matches.get_one::<usize>("NR_BLOCKS").unwrap(),
                 expected_rc: *matches.get_one::<u32>("EXPECTED").unwrap(),
                 actual_rc: *matches.get_one::<u32>("ACTUAL").unwrap(),
+            },
+            "CREATE_STALE_DIRTY_BITS" => DamageOp::CreateStaleDirtyBits {
+                nr_blocks: *matches.get_one::<usize>("NR_BLOCKS").unwrap(),
             },
             _ => {
                 eprintln!("unknown option");
