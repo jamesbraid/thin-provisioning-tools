@@ -286,6 +286,33 @@ fn dirty_bits_on_unmapped_blocks_with_clean_shutdown_should_fail() -> Result<()>
     Ok(())
 }
 
+const UNMAPPED_DIRTY_BIT: &str = "dirty bit found on an unmapped block";
+
+#[test]
+fn stale_dirty_bits_with_clean_shutdown_should_report_unmapped_block() -> Result<()> {
+    let mut td = TestDir::new()?;
+    let md = mk_valid_md(&mut td)?;
+    generate_stale_dirty_bits(&md, 4)?;
+    assert!(get_clean_shutdown(&md)?);
+
+    let stderr = run_fail(cache_check_cmd(args![&md]))?;
+    assert!(stderr.contains(UNMAPPED_DIRTY_BIT));
+    Ok(())
+}
+
+#[test]
+fn stale_dirty_bits_without_clean_shutdown_should_not_report_unmapped_block() -> Result<()> {
+    let mut td = TestDir::new()?;
+    let md = mk_valid_md(&mut td)?;
+    generate_stale_dirty_bits(&md, 4)?;
+    unset_clean_shutdown(&md)?;
+
+    let output = run_ok_raw(cache_check_cmd(args![&md]))?;
+    assert!(!std::str::from_utf8(&output.stdout)?.contains(UNMAPPED_DIRTY_BIT));
+    assert!(!std::str::from_utf8(&output.stderr)?.contains(UNMAPPED_DIRTY_BIT));
+    Ok(())
+}
+
 //------------------------------------------
 // test clear-needs-check
 
