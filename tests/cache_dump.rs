@@ -141,6 +141,34 @@ fn dump_marks_all_mappings_dirty_without_clean_shutdown() -> Result<()> {
     Ok(())
 }
 
+// Format 1 keeps the dirty flag in each mapping rather than in a bitset, but
+// it is written at the same time, so the same rule applies.
+#[test]
+fn dump_v1_keeps_dirty_flags_with_clean_shutdown() -> Result<()> {
+    let mut td = TestDir::new()?;
+    let md = mk_valid_md_with_version(&mut td, 1)?;
+    assert!(get_clean_shutdown(&md)?);
+    let xml = run_ok(cache_dump_cmd(args![&md]))?;
+    assert!(count_mappings(&xml, true) > 0);
+    assert!(count_mappings(&xml, false) > 0);
+    Ok(())
+}
+
+#[test]
+fn dump_v1_marks_all_mappings_dirty_without_clean_shutdown() -> Result<()> {
+    let mut td = TestDir::new()?;
+    let md = mk_valid_md_with_version(&mut td, 1)?;
+    let before = run_ok(cache_dump_cmd(args![&md]))?;
+    let nr_mappings = count_mappings(&before, true) + count_mappings(&before, false);
+    assert!(count_mappings(&before, false) > 0);
+
+    unset_clean_shutdown(&md)?;
+    let after = run_ok(cache_dump_cmd(args![&md]))?;
+    assert_eq!(count_mappings(&after, false), 0);
+    assert_eq!(count_mappings(&after, true), nr_mappings);
+    Ok(())
+}
+
 //------------------------------------------
 // test no stderr on broken pipe errors
 

@@ -22,6 +22,10 @@ pub fn mk_valid_xml(td: &mut TestDir) -> Result<PathBuf> {
 }
 
 pub fn mk_valid_md(td: &mut TestDir) -> Result<PathBuf> {
+    mk_valid_md_with_version(td, 2)
+}
+
+pub fn mk_valid_md_with_version(td: &mut TestDir, metadata_version: u8) -> Result<PathBuf> {
     let xml = td.mk_path("meta.xml");
     let md = td.mk_path("meta.bin");
 
@@ -29,7 +33,8 @@ pub fn mk_valid_md(td: &mut TestDir) -> Result<PathBuf> {
     write_xml(&xml, &mut gen)?;
 
     let _file = file_utils::create_sized_file(&md, 4096 * 4096);
-    run_ok(cache_restore_cmd(args!["-i", &xml, "-o", &md]))?;
+    let version = format!("--metadata-version={}", metadata_version);
+    run_ok(cache_restore_cmd(args!["-i", &xml, "-o", &md, &version]))?;
 
     Ok(md)
 }
