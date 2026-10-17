@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::path::Path;
 
 mod common;
 
@@ -108,6 +109,54 @@ fn accepts_empty_argument() -> Result<()> {
     let output = mk_zeroed_md(&mut td)?;
     run_ok(cache_repair_cmd(args!["-i", &input, "-o", &output, ""]))?;
     Ok(())
+}
+
+//-----------------------------------------
+// test the dirty flags with and without clean shutdown
+
+#[test]
+fn repair_keeps_dirty_flags_with_clean_shutdown() -> Result<()> {
+    let mut td = TestDir::new()?;
+    let input = mk_valid_md(&mut td)?;
+    let output = mk_zeroed_md(&mut td)?;
+    run_ok(cache_repair_cmd(args!["-i", &input, "-o", &output]))?;
+    assert!(get_clean_shutdown(&output)?);
+
+    let dump_in = run_ok_raw(cache_dump_cmd(args![&input]))?;
+    let dump_out = run_ok_raw(cache_dump_cmd(args![&output]))?;
+    assert_eq!(dump_in.stdout, dump_out.stdout);
+    Ok(())
+}
+
+// The output is marked as cleanly shut down, so the kernel will trust its
+// dirty flags. A crashed input must therefore come out with every mapping
+// dirty, or blocks newer than the origin would be dropped on demotion.
+fn repair_marks_all_dirty_without_clean_shutdown(input: &Path, td: &mut TestDir) -> Result<()> {
+    let (nr_dirty, nr_clean) = count_dirty_mappings(input)?;
+    assert!(nr_clean > 0);
+    unset_clean_shutdown(input)?;
+
+    let output = mk_zeroed_md(td)?;
+    run_ok(cache_repair_cmd(args!["-i", input, "-o", &output]))?;
+    run_ok(cache_check_cmd(args![&output]))?;
+    assert!(get_clean_shutdown(&output)?);
+    assert_eq!(count_dirty_mappings(&output)?, (nr_dirty + nr_clean, 0));
+    Ok(())
+}
+
+#[test]
+fn repair_v1_marks_all_dirty_without_clean_shutdown() -> Result<()> {
+    let mut td = TestDir::new()?;
+    let input = mk_valid_md_with_version(&mut td, 1)?;
+    repair_marks_all_dirty_without_clean_shutdown(&input, &mut td)
+}
+
+#[test]
+fn repair_v2_marks_all_dirty_without_clean_shutdown() -> Result<()> {
+    let mut td = TestDir::new()?;
+    let input = mk_valid_md(&mut td)?;
+    generate_stale_dirty_bits(&input, 4)?;
+    repair_marks_all_dirty_without_clean_shutdown(&input, &mut td)
 }
 
 //-----------------------------------------

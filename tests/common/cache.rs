@@ -39,6 +39,15 @@ pub fn mk_valid_md_with_version(td: &mut TestDir, metadata_version: u8) -> Resul
     Ok(md)
 }
 
+// Returns the number of dirty and clean mappings in the output of cache_dump
+pub fn count_dirty_mappings(md: &Path) -> Result<(usize, usize)> {
+    let xml = run_ok(cache_dump_cmd(args![md]))?;
+    Ok((
+        xml.matches("dirty=\"true\"").count(),
+        xml.matches("dirty=\"false\"").count(),
+    ))
+}
+
 //-----------------------------------------------
 
 pub fn generate_metadata_leaks(
