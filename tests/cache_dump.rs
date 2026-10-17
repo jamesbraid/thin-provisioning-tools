@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::path::Path;
 
 mod common;
 
@@ -167,6 +168,46 @@ fn dump_v1_marks_all_mappings_dirty_without_clean_shutdown() -> Result<()> {
     assert_eq!(count_mappings(&after, false), 0);
     assert_eq!(count_mappings(&after, true), nr_mappings);
     Ok(())
+}
+
+// cache_restore marks its output as cleanly shut down, so the dump of a
+// crashed cache must not carry its stale dirty flags into the restored
+// metadata.
+fn dump_restore_marks_all_dirty_without_clean_shutdown(
+    md: &Path,
+    metadata_version: u8,
+    td: &mut TestDir,
+) -> Result<()> {
+    let (nr_dirty, nr_clean) = count_dirty_mappings(md)?;
+    assert!(nr_clean > 0);
+    unset_clean_shutdown(md)?;
+
+    let output = run_ok_raw(cache_dump_cmd(args![md]))?;
+    let xml = td.mk_path("meta.xml");
+    write_file(&xml, &output.stdout)?;
+
+    let md2 = mk_zeroed_md(td)?;
+    let version = format!("--metadata-version={}", metadata_version);
+    run_ok(cache_restore_cmd(args!["-i", &xml, "-o", &md2, &version]))?;
+    run_ok(cache_check_cmd(args![&md2]))?;
+    assert!(get_clean_shutdown(&md2)?);
+    assert_eq!(count_dirty_mappings(&md2)?, (nr_dirty + nr_clean, 0));
+    Ok(())
+}
+
+#[test]
+fn dump_restore_v1_marks_all_dirty_without_clean_shutdown() -> Result<()> {
+    let mut td = TestDir::new()?;
+    let md = mk_valid_md_with_version(&mut td, 1)?;
+    dump_restore_marks_all_dirty_without_clean_shutdown(&md, 1, &mut td)
+}
+
+#[test]
+fn dump_restore_v2_marks_all_dirty_without_clean_shutdown() -> Result<()> {
+    let mut td = TestDir::new()?;
+    let md = mk_valid_md(&mut td)?;
+    generate_stale_dirty_bits(&md, 4)?;
+    dump_restore_marks_all_dirty_without_clean_shutdown(&md, 2, &mut td)
 }
 
 //------------------------------------------
