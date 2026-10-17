@@ -11,6 +11,10 @@ DESCRIPTION
   to put it back onto a metadata device (to process by the device-mapper
   target), or file.
 
+  If the metadata was not cleanly shut down, every mapping is dumped as
+  dirty, since the stored dirty flags are out of date and the kernel treats
+  every cached block as dirty in this case.
+
   This tool cannot be run on live metadata.
 
 OPTIONS
