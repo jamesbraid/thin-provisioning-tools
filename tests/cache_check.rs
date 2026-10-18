@@ -282,7 +282,8 @@ fn dirty_bits_on_unmapped_blocks_with_clean_shutdown_should_fail() -> Result<()>
     let md = mk_valid_md(&mut td)?;
     assert!(get_clean_shutdown(&md)?);
     generate_stale_dirty_bits(&md, 16)?;
-    run_fail(cache_check_cmd(args![&md]))?;
+    let stderr = run_fail(cache_check_cmd(args![&md]))?;
+    assert!(stderr.contains("dirty bit found on an unmapped block"));
     Ok(())
 }
 
