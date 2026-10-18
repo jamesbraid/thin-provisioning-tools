@@ -114,10 +114,9 @@ fn count_mappings(xml: &str, dirty: bool) -> usize {
     xml.matches(&format!("dirty=\"{}\"", dirty)).count()
 }
 
-#[test]
-fn dump_keeps_dirty_flags_with_clean_shutdown() -> Result<()> {
+fn dump_keeps_dirty_flags_with_clean_shutdown(metadata_version: u8) -> Result<()> {
     let mut td = TestDir::new()?;
-    let md = mk_valid_md(&mut td)?;
+    let md = mk_valid_md_with_version(&mut td, metadata_version)?;
     assert!(get_clean_shutdown(&md)?);
     let xml = run_ok(cache_dump_cmd(args![&md]))?;
     assert!(count_mappings(&xml, true) > 0);
@@ -125,12 +124,21 @@ fn dump_keeps_dirty_flags_with_clean_shutdown() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn dump_v1_keeps_dirty_flags_with_clean_shutdown() -> Result<()> {
+    dump_keeps_dirty_flags_with_clean_shutdown(1)
+}
+
+#[test]
+fn dump_v2_keeps_dirty_flags_with_clean_shutdown() -> Result<()> {
+    dump_keeps_dirty_flags_with_clean_shutdown(2)
+}
+
 // The kernel treats every mapped block as dirty after an unclean shutdown,
 // since the dirty bitset is only written on a clean suspend.
-#[test]
-fn dump_marks_all_mappings_dirty_without_clean_shutdown() -> Result<()> {
+fn dump_marks_all_mappings_dirty_without_clean_shutdown(metadata_version: u8) -> Result<()> {
     let mut td = TestDir::new()?;
-    let md = mk_valid_md(&mut td)?;
+    let md = mk_valid_md_with_version(&mut td, metadata_version)?;
     let before = run_ok(cache_dump_cmd(args![&md]))?;
     let nr_mappings = count_mappings(&before, true) + count_mappings(&before, false);
 
@@ -139,6 +147,16 @@ fn dump_marks_all_mappings_dirty_without_clean_shutdown() -> Result<()> {
     assert_eq!(count_mappings(&after, false), 0);
     assert_eq!(count_mappings(&after, true), nr_mappings);
     Ok(())
+}
+
+#[test]
+fn dump_v1_marks_all_mappings_dirty_without_clean_shutdown() -> Result<()> {
+    dump_marks_all_mappings_dirty_without_clean_shutdown(1)
+}
+
+#[test]
+fn dump_v2_marks_all_mappings_dirty_without_clean_shutdown() -> Result<()> {
+    dump_marks_all_mappings_dirty_without_clean_shutdown(2)
 }
 
 //------------------------------------------
