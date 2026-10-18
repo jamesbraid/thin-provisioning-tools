@@ -111,3 +111,40 @@ fn accepts_empty_argument() -> Result<()> {
 }
 
 //-----------------------------------------
+// test the dirty flags without clean shutdown
+
+// The output is marked as cleanly shut down, so the kernel trusts its dirty
+// flags. Without a clean shutdown of the input, every mapping must come out
+// dirty, or blocks newer than the origin would be lost on demotion.
+fn repair_marks_all_dirty_without_clean_shutdown(metadata_version: u8) -> Result<()> {
+    let mut td = TestDir::new()?;
+    let input = mk_valid_md_with_version(&mut td, metadata_version)?;
+    if metadata_version == 2 {
+        generate_stale_dirty_bits(&input, 4)?;
+    }
+    let before = run_ok(cache_dump_cmd(args![&input]))?;
+    let nr_mappings = count_mappings(&before, true) + count_mappings(&before, false);
+    assert!(count_mappings(&before, false) > 0);
+    unset_clean_shutdown(&input)?;
+
+    let output = mk_zeroed_md(&mut td)?;
+    run_ok(cache_repair_cmd(args!["-i", &input, "-o", &output]))?;
+    run_ok(cache_check_cmd(args![&output]))?;
+    assert!(get_clean_shutdown(&output)?);
+    let after = run_ok(cache_dump_cmd(args![&output]))?;
+    assert_eq!(count_mappings(&after, false), 0);
+    assert_eq!(count_mappings(&after, true), nr_mappings);
+    Ok(())
+}
+
+#[test]
+fn repair_v1_marks_all_dirty_without_clean_shutdown() -> Result<()> {
+    repair_marks_all_dirty_without_clean_shutdown(1)
+}
+
+#[test]
+fn repair_v2_marks_all_dirty_without_clean_shutdown() -> Result<()> {
+    repair_marks_all_dirty_without_clean_shutdown(2)
+}
+
+//-----------------------------------------

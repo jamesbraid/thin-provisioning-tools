@@ -39,6 +39,10 @@ pub fn mk_valid_md_with_version(td: &mut TestDir, metadata_version: u8) -> Resul
     Ok(md)
 }
 
+pub fn count_mappings(xml: &str, dirty: bool) -> usize {
+    xml.matches(&format!("dirty=\"{}\"", dirty)).count()
+}
+
 //-----------------------------------------------
 
 pub fn generate_metadata_leaks(

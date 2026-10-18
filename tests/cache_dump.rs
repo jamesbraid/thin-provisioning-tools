@@ -110,10 +110,6 @@ fn dump_restore_cycle() -> Result<()> {
 //------------------------------------------
 // test dirty flags with and without clean shutdown
 
-fn count_mappings(xml: &str, dirty: bool) -> usize {
-    xml.matches(&format!("dirty=\"{}\"", dirty)).count()
-}
-
 fn dump_keeps_dirty_flags_with_clean_shutdown(metadata_version: u8) -> Result<()> {
     let mut td = TestDir::new()?;
     let md = mk_valid_md_with_version(&mut td, metadata_version)?;
