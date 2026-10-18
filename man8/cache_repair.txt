@@ -10,6 +10,9 @@ DESCRIPTION
   another device or file. If written to a metadata device, the metadata can
   be processed by the device-mapper target.
 
+  The output is always marked as cleanly shut down. If the input was not,
+  every mapping in the output is marked dirty, as cache_dump(8) does.
+
   This tool cannot be run on live metadata.
 
 OPTIONS

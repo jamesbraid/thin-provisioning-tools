@@ -8,6 +8,11 @@ DESCRIPTION
   cache_check checks cache metadata created by the device-mapper cache target
   on a device or file.
 
+  The dirty bitset of version 2 metadata is only written when the cache is
+  shut down cleanly. If the clean shutdown flag is not set, dirty bits on
+  unmapped cache blocks are expected, and cache_check does not report them.
+  The bitset is still checked for structural damage.
+
   This tool cannot be run on live metadata.
 
 OPTIONS
