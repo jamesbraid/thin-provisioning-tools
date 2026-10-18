@@ -265,7 +265,7 @@ fn dirty_bitset_not_found_should_fail() -> Result<()> {
 fn stale_dirty_bits_without_clean_shutdown_should_pass() -> Result<()> {
     let mut td = TestDir::new()?;
     let md = mk_valid_md(&mut td)?;
-    assert!(unmap_dirty_blocks(&md, 16)? > 0);
+    generate_stale_dirty_bits(&md, 16)?;
     unset_clean_shutdown(&md)?;
     run_ok(cache_check_cmd(args![&md]))?;
     run_ok(cache_check_cmd(args![
@@ -281,7 +281,7 @@ fn dirty_bits_on_unmapped_blocks_with_clean_shutdown_should_fail() -> Result<()>
     let mut td = TestDir::new()?;
     let md = mk_valid_md(&mut td)?;
     assert!(get_clean_shutdown(&md)?);
-    assert!(unmap_dirty_blocks(&md, 16)? > 0);
+    generate_stale_dirty_bits(&md, 16)?;
     run_fail(cache_check_cmd(args![&md]))?;
     Ok(())
 }
